@@ -47,8 +47,9 @@
                             <select id="account" class="mdl-textfield" data-required>
                             </select>
                             <br>
-                            <select id="category" class="mdl-textfield" data-required>
+                            <select id="category" class="mdl-textfield" data-required onchange="updateProgressBar()">
                             </select>
+                            <progress id="budget-progress" class="mdl-textfield" ></progress>
                             <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
                                 <input class="mdl-textfield__input" type="number" id="amount" step="0.01" data-required>
                                 <label class="mdl-textfield__label" for="amount">Amount</label>

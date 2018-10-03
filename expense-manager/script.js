@@ -13,7 +13,7 @@ const SCOPES =
   "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly";
 
 const ACCOUNT_RANGE = "Data!A2:A50";
-const CATEGORY_RANGE = "Data!E2:E50";
+const CATEGORY_RANGE = "Data!E2:G50";
 
 // Cached DOM bindings
 const authorizeButton = document.getElementById("authorize-button");
@@ -27,6 +27,7 @@ const amountEl = document.getElementById("amount");
 const isIncomeEl = document.getElementById("is-income");
 const formLoader = document.getElementById("form-loader");
 const snackbarContainer = document.getElementById("toast-container");
+const progressBar = document.getElementById("budget-progress");
 
 let spreadsheetId = "";
 
@@ -104,6 +105,13 @@ function onSignin() {
   );
 }
 
+function updateProgressBar() {
+  var s = categoryEl.selectedIndex;
+  var d = categoryEl.options[s].dataset;
+  progressBar.setAttribute("value", d.expense);
+  progressBar.setAttribute("max", d.budget);
+}
+
 /**
  * Get sheet ID for a given sheet name
  *
@@ -172,7 +180,8 @@ function addExpense(event) {
           accountVal,
           categoryVal,
           isIncome ? 0 : amountVal,
-          isIncome ? amountVal : 0
+          isIncome ? amountVal : 0,
+          dateObj.yyyy + "" + dateObj.mm
         ]
       ])
     )
@@ -187,7 +196,8 @@ function addExpense(event) {
 
         snackbarContainer.MaterialSnackbar.showSnackbar({
           message: "Expense added!"
-        });
+        });        
+        updateCategoriesAndAccounts(spreadsheetId);  
       },
       response => {
         let message = "Sorry, something went wrong";
@@ -210,6 +220,9 @@ function addExpense(event) {
         expenseForm.style.display = "flex";
       }
     );
+    
+    
+  
   return false;
 }
 
@@ -257,10 +270,11 @@ function updateCategoriesAndAccounts(sheetID) {
   gapi.client.sheets.spreadsheets.values
     .batchGet(batchGetRequestObj(sheetID, [ACCOUNT_RANGE, CATEGORY_RANGE]))
     .then(response => {
-      const allAccounts = response.result.valueRanges[0].values[0];
-      const allCategories = response.result.valueRanges[1].values[0];
-      accountEl.innerHTML = allAccounts.map(wrapInOption).join();
-      categoryEl.innerHTML = allCategories.map(wrapInOption).join();
+      const allAccounts = response.result.valueRanges[0].values;
+      const allCategories = response.result.valueRanges[1].values;
+      accountEl.innerHTML = allAccounts.map(wrapInOption).join("");
+      categoryEl.innerHTML = allCategories.map(wrapInOptionWithBudget).join("");
+      updateProgressBar();
     });
 }
 
@@ -277,13 +291,17 @@ function batchGetRequestObj(spreadsheetId, ranges) {
     spreadsheetId,
     ranges,
     dateTimeRenderOption: "FORMATTED_STRING",
-    majorDimension: "COLUMNS",
+    majorDimension: "ROWS",
     valueRenderOption: "FORMATTED_VALUE"
   };
 }
 
+function wrapInOptionWithBudget(option) {
+  return `<option data-budget='${option[1]}' data-expense='${option[2]}' value='${option[0]}'>${option[0]}</option>`;
+}
+
 function wrapInOption(option) {
-  return `<option value='${option}'>${option}</option>`;
+  return `<option value='${option[0]}'>${option[0]}</option>`;
 }
 
 // register for service worker
@@ -315,3 +333,4 @@ function initFields() {
   // set date picker's defalt value as today
   date.value = new Date().toISOString().substr(0, 10);
 }
+
