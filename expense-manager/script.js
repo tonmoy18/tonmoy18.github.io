@@ -28,6 +28,7 @@ const isIncomeEl = document.getElementById("is-income");
 const formLoader = document.getElementById("form-loader");
 const snackbarContainer = document.getElementById("toast-container");
 const progressBar = document.getElementById("budget-progress");
+const btnInstall = document.getElementById('homescreen-btn');
 
 let spreadsheetId = "";
 
@@ -333,4 +334,19 @@ function initFields() {
   // set date picker's defalt value as today
   date.value = new Date().toISOString().substr(0, 10);
 }
+
+let installPromptEvent;
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault();
+  installPromptEvent = event;
+  btnInstall.style.display = "block";
+});
+
+btnInstall.addEventListener('click', () => {
+  btnInstall.style.display = "none";
+  installPromptEvent.prompt();
+  installPromptEvent.userChoice.then(handleInstall);
+});
+
 
