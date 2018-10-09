@@ -1,29 +1,31 @@
 {
-  "short_name": "Expense Manager",
+  "short_name": "ExpenseMngr",
   "name": "Expense Manager",
   "description": "Track your spendings using expense manager",
+  "theme_color": "#3f51b5",
+  "background_color": "#ffffff",
   "icons": [
     {
-      "src": "icons/android-icon-1x.png",
+      "src": "icons/dollar-1024x1024.png",
       "type": "image/png",
-      "sizes": "48x48"
+      "sizes": "1024x1024"
     },
     {
-      "src": "icons/android-icon-2x.png",
+      "src": "icons/dollar-512x512.png",
       "type": "image/png",
-      "sizes": "96x96"
+      "sizes": "512x512"
     },
     {
-      "src": "icons/android-icon-144x144.png",
+      "src": "icons/dollar-256x256.png",
       "type": "image/png",
-      "sizes": "144x144"
+      "sizes": "256x256"
     },
     {
-      "src": "icons/android-icon-4x.png",
+      "src": "icons/dollar-128x128.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "128x128"
     }
   ],
-  "start_url": "./index.html?utm_source=homescreen",
+  "start_url": "./index.html",
   "display": "standalone"
 }
