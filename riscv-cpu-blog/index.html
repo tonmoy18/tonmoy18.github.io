@@ -3,17 +3,17 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
-<title>Designing a RISC-V Processor Core | Personal site of Tonmoy Roy. Meant to teach the steps for designing a RISC-V processor core using SysteVerilog</title>
+<title>Designing a RISC-V Processor Core | Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog</title>
 <meta name="generator" content="Jekyll v4.0.0" />
 <meta property="og:title" content="Designing a RISC-V Processor Core" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Personal site of Tonmoy Roy. Meant to teach the steps for designing a RISC-V processor core using SysteVerilog" />
-<meta property="og:description" content="Personal site of Tonmoy Roy. Meant to teach the steps for designing a RISC-V processor core using SysteVerilog" />
+<meta name="description" content="Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog" />
+<meta property="og:description" content="Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog" />
 <link rel="canonical" href="http://localhost:4000/riscv-cpu-blog/" />
 <meta property="og:url" content="http://localhost:4000/riscv-cpu-blog/" />
 <meta property="og:site_name" content="Designing a RISC-V Processor Core" />
 <script type="application/ld+json">
-{"url":"http://localhost:4000/riscv-cpu-blog/","description":"Personal site of Tonmoy Roy. Meant to teach the steps for designing a RISC-V processor core using SysteVerilog","@type":"WebSite","headline":"Designing a RISC-V Processor Core","name":"Designing a RISC-V Processor Core","@context":"https://schema.org"}</script>
+{"url":"http://localhost:4000/riscv-cpu-blog/","description":"Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog","@type":"WebSite","headline":"Designing a RISC-V Processor Core","name":"Designing a RISC-V Processor Core","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/riscv-cpu-blog/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/riscv-cpu-blog/feed.xml" title="Designing a RISC-V Processor Core" /></head>
 <body><header class="site-header" role="banner">
@@ -34,9 +34,9 @@
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
         <div class="home"><h1 id="designing-a-risc-v-processor-core">Designing a RISC-V Processor Core</h1>
-<p>This blog series describes the process of creating a a small RISC-V processor core using SystemVerilog hardware definition language. Each post will be a small tutorial describing the models, testbench and architecture as well as the code to design these and setup steps required to do simulation. We are going to be using open source cycle accurate simulator <a href="https://www.veripool.org/wiki/verilator">Verilator</a> in this series. If you want you can use any other simulator capable of running SystemVerilog. In that case you can just skip over the steps describing verilator related steps. The source code explained in each blog post will be available as separate branches in this repository:</p>
+<p>This blog series describes the process of creating a a small RISC-V processor core using SystemVerilog hardware definition language. Each post will be a small tutorial describing the models, testbench and architecture as well as the code to design these and setup steps required to do simulation. We are going to be using open source cycle accurate simulator <a href="https://www.veripool.org/wiki/verilator">Verilator</a> in this series. If you want you can use any other simulator capable of running SystemVerilog. In that case you can just skip over the steps describing verilator related steps. The source code explained in each blog post will be available as separate branches in <a href="https://github.com/tonmoy18/riscv-cpu-blog">this repository</a>.</p>
 
-<p>The entire final implementation will be available in this repository:</p>
+<p>We will start with implementing just the RV32I instruction set of the RISC-V specification. We will mostly stick to getting a minimum correct implementation done first. This means we will have only the machine mode in our design and will not worry about the user, supervisor or hypervior modes. We will also focus on a 32 bit implementation only for now. After getting a basic correct processor core implemented, I will either go into more system level implementation details.</p>
 
 <h4 id="simulating-the-skeleton-of-a-processor-core"><a href="/riscv-cpu-blog/2020/02/01/getting-started.html">Simulating the Skeleton of a Processor Core</a></h4>
 <p>The first step in creating our own processor core is to create the testbench, the models and to setup the environment to simulate our design in. To simulate our processor core, we need to instantiate it at a top level from where we can apply different stimulus (or inputs) to the core and monitor the outputs to verify the correctness of our design. <a href="/riscv-cpu-blog/2020/02/01/getting-started.html">Read More»</a></p>
@@ -68,7 +68,7 @@
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Personal site of Tonmoy Roy. Meant to teach the steps for designing a RISC-V processor core using SysteVerilog</p>
+        <p>Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog</p>
       </div>
     </div>
 
