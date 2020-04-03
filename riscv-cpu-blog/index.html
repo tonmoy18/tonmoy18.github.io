@@ -13,7 +13,7 @@
 <meta property="og:url" content="https://tonmoy18.github.io/riscv-cpu-blog/" />
 <meta property="og:site_name" content="Designing a RISC-V Processor Core" />
 <script type="application/ld+json">
-{"url":"https://tonmoy18.github.io/riscv-cpu-blog/","description":"Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog","@type":"WebSite","headline":"Designing a RISC-V Processor Core","name":"Designing a RISC-V Processor Core","@context":"https://schema.org"}</script>
+{"headline":"Designing a RISC-V Processor Core","description":"Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog","@type":"WebSite","name":"Designing a RISC-V Processor Core","url":"https://tonmoy18.github.io/riscv-cpu-blog/","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/riscv-cpu-blog/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://tonmoy18.github.io/riscv-cpu-blog/feed.xml" title="Designing a RISC-V Processor Core" /></head>
 <body><header class="site-header" role="banner">
@@ -40,6 +40,10 @@
 
 <h4 id="simulating-the-skeleton-of-a-processor-core"><a href="/riscv-cpu-blog/2020/02/01/getting-started.html">Simulating the Skeleton of a Processor Core</a></h4>
 <p>The first step in creating our own processor core is to create the testbench, the models and to setup the environment to simulate our design in. To simulate our processor core, we need to instantiate it at a top level from where we can apply different stimulus (or inputs) to the core and monitor the outputs to verify the correctness of our design. <a href="/riscv-cpu-blog/2020/02/01/getting-started.html">Read More»</a></p>
+
+<h4 id="implementing-our-first-instruction"><a href="/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html">Implementing our First Instruction</a></h4>
+<p>For the next step in designing our processor core, we are going to go head in into implementing our first instruction. This post looks at just one instruction (the R-Type ADD), and implements it from start to end. It will first assume no pipeline stage conflict, and later implement a stalling mechanism incase a conflict is found.
+ <a href="/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html">Read More»</a></p>
 <h2 class="post-list-heading">Posts</h2>
     <ul class="post-list"><li><span class="post-meta">Mar 26, 2020</span>
         <h3>
