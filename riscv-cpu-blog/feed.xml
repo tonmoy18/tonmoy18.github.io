@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.0.0">Jekyll</generator><link href="https://tonmoy18.github.io/riscv-cpu-blog/feed.xml" rel="self" type="application/atom+xml" /><link href="https://tonmoy18.github.io/riscv-cpu-blog/" rel="alternate" type="text/html" /><updated>2020-04-03T17:50:09-05:00</updated><id>https://tonmoy18.github.io/riscv-cpu-blog/feed.xml</id><title type="html">Designing a RISC-V Processor Core</title><subtitle>Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog</subtitle><entry><title type="html">Implementing our First Instruction</title><link href="https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html" rel="alternate" type="text/html" title="Implementing our First Instruction" /><published>2020-03-26T21:07:00-05:00</published><updated>2020-03-26T21:07:00-05:00</updated><id>https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction</id><content type="html" xml:base="https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html">&lt;h1 id=&quot;implementing-our-first-instruction&quot;&gt;Implementing our First Instruction&lt;/h1&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.0.0">Jekyll</generator><link href="https://tonmoy18.github.io/riscv-cpu-blog/feed.xml" rel="self" type="application/atom+xml" /><link href="https://tonmoy18.github.io/riscv-cpu-blog/" rel="alternate" type="text/html" /><updated>2020-04-03T17:59:42-05:00</updated><id>https://tonmoy18.github.io/riscv-cpu-blog/feed.xml</id><title type="html">Designing a RISC-V Processor Core</title><subtitle>Personal site of Tonmoy Roy. The goal of this site is to teach and learn the steps for designing a RISC-V processor core using SysteVerilog</subtitle><entry><title type="html">Implementing our First Instruction</title><link href="https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html" rel="alternate" type="text/html" title="Implementing our First Instruction" /><published>2020-03-26T21:07:00-05:00</published><updated>2020-03-26T21:07:00-05:00</updated><id>https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction</id><content type="html" xml:base="https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html">&lt;h1 id=&quot;implementing-our-first-instruction&quot;&gt;Implementing our First Instruction&lt;/h1&gt;
 &lt;p&gt;In the last &lt;a href=&quot;/riscv-cpu-blog/2020/02/01/getting-started.html&quot;&gt;post&lt;/a&gt; we created a testbench, the models and looked at the necessary steps to set up our simulation environment. In this post we are going to dive right into creating the processor core itself. At the end of this post we will have looked into how to execute at least one RISC-V instruction.&lt;/p&gt;
 
 &lt;h2 id=&quot;the-r-type-instruction&quot;&gt;The R-Type Instruction&lt;/h2&gt;
@@ -27,7 +27,7 @@
 
 &lt;p&gt;Design wise our program counter is going to be very simple. It will have the typical reset, clock inputs as well as a control signal to tell it to increment by 4 when needed. For now it will have one output that is the current value of the program counter. The program counter register needs to either hold the current value or increment when the relevant signal is high. The counter logic should look something like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_ff @(posedge clk_i, negedge rst_n_i) begin
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_ff @(posedge clk_i, negedge rst_n_i) begin
     if (rst_n_i == 1'b0) begin
       pc_q &amp;lt;= PC_RESET_VAL;
     end else begin
@@ -38,8 +38,7 @@
   always_comb begin
     if (incr_pc_i == 1'b1) next_pc = pc_q + 'd4;
     else next_pc = pc_q;
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;The complete program counter module up to this step can be found &lt;a href=&quot;https://github.com/tonmoy18/riscv-cpu-blog/blob/post-02-intermediate/src/pc.sv&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
 
@@ -53,11 +52,11 @@
 &lt;h2 id=&quot;regfile&quot;&gt;Regfile&lt;/h2&gt;
 &lt;p&gt;The register file is the module that holds all 32 registers of the RISC-V processor. These include 31 actual registers and the zero register which always returns zero (and can not be written two). Since we do not need a physical register for the register zero, we will use an array of sized 31. The indexing of this array needs to start at 1 and end at 31. Since the address of the zero register is 0, this enables us to quickly decode the register address to the array index without using any kind of offset calculation. The array declaration will look like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  logic [31:0] reg_content [31:1];
-&lt;/code&gt;&lt;/pre&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  logic [31:0] reg_content [31:1];&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;We also need to read the registers with two different addresses simultaneously. We will use the read address values on the ports r1_addr_i and r2_addr_i to select the registers. The value of the selected registers using these address ports will be outputted on the ports d1out_o and d2out_o respectively. The read can happen in the same clock cycle the address is asserted. Hence the read logic can be in an always_comb block and the logic for both ports need to be independent. The logic is going to look like this:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_comb begin
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_comb begin
     if (r1_addr_i == '0) begin
       d1out_o = '0;
     end else if (r1_addr_i == w_addr_i) begin
@@ -73,31 +72,28 @@
     end else begin
       d2out_o = reg_content[r2_addr_i];
     end
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Similarly the register file can be written to using the ports w_addr_i and din_i ports. Since the address zero can not actually be written to, when the value of w_addr_i is set to 0, the writing will be effectively disabled. Hence, we can use the value 0 on the w_addr_i to keep the write port disabled as well when we are not using it. The writing logic needs to be in an always_ff block to make sure that the reg_content is treated as a “register”. It should look like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_ff@(posedge clk_i, negedge rst_n_i) begin
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_ff@(posedge clk_i, negedge rst_n_i) begin
     if (rst_n_i != 1'b0) begin
       if (w_addr_i != '0) begin
         reg_content[w_addr_i] &amp;lt;= din_i;
       end
     end
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;To be able to debug easily in simulation, we are going to add an initial block at the bottom of the regfile code. Without this the registers will be populated with random data at the start of the simulation. We will put some known “random” values instead to make our life easier. Here is the initial block that I will be using:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  initial begin
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  initial begin
     reg_content[1] = 'd04;
     reg_content[2] = 'd27;
     reg_content[3] = 'd00;
     reg_content[4] = 'd83;
     reg_content[5] = 'd29;
     reg_content[6] = 'd58;
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;h2 id=&quot;control&quot;&gt;Control&lt;/h2&gt;
 &lt;p&gt;The control module will be responsible for decoding the instruction obtained from the fetch module. After decoding the instruction, the control module makes sure the proper control signals are sent to the proper modules at appropriate pipeline stage. In case of the R-Type instruction, the control module needs to read the appropriate register content from addresses rs1 and rs2 at the decode stage.&lt;/p&gt;
@@ -108,7 +104,7 @@
 
 &lt;p&gt;For example, the &lt;code class=&quot;highlighter-rouge&quot;&gt;d_opcode&lt;/code&gt; is just the bits 6 to 0 of the instruction coming out of the fetching module as input into the control module &lt;code class=&quot;highlighter-rouge&quot;&gt;d_ints_i&lt;/code&gt;. This will be used to generate the &lt;code class=&quot;highlighter-rouge&quot;&gt;x_opcode&lt;/code&gt; registered signal one clock cycle later. Similarly &lt;code class=&quot;highlighter-rouge&quot;&gt;m_opcode&lt;/code&gt; is the same opcode value delayed by one more clock cycle and &lt;code class=&quot;highlighter-rouge&quot;&gt;w_opcode&lt;/code&gt; is the opcode of that instruction at it’s writeback stage. We will eventually need to implement a mechanism for stalling the pipeline based on data conflict. However, for now we will assume no such thing and just implement the stages as if there is no conflict ever.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt; always_ff @(posedge clk_i, negedge rst_n_i) begin
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt; always_ff @(posedge clk_i, negedge rst_n_i) begin
     if (rst_n_i == 1'b0) begin      
       x_opcode &amp;lt;= '0;
       x_rd &amp;lt;= '0;
@@ -158,12 +154,12 @@
         x_funct7_30_next = d_inst_i[30];
       end
     endcase
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;h2 id=&quot;datapath&quot;&gt;Datapath&lt;/h2&gt;
 &lt;p&gt;The datapath module will redirect the data to and from the arith, logic, shift units as well as diverting it to and from the data memory unit and the register write back port based on the instruction that is in the appropriate pipeline stage. We will use the registered signals x_arith_op1 and x_arith_op2 as inputs to the arith block, m_alu_data as the registered signal that will capture either the output of the arith, the logic or the shift block and the registered signal w_mux to capture either the output of the data memory or the m_alu_data register. Since we are just going to implement the ADD instruction for now, there is going to be only one data path. We will hard wire this data path for now. The combinational logic for this is going to look like this:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_comb begin
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_comb begin
     m_alu_data_next = arith_out_i;
   end
 
@@ -177,11 +173,11 @@
 
   always_comb begin
     w_mux_next = m_alu_data_q;
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;The registered signals generated from these signals need to be inside corresponding always_ff block as well. This always_ff block once implemented will be as follows:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_ff @(posedge clk_i, negedge rst_n_i) begin
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_ff @(posedge clk_i, negedge rst_n_i) begin
     if (rst_n_i == 1'b0) begin
       m_alu_data_q &amp;lt;= '0;
       x_arith_op1_q &amp;lt;= '0;
@@ -193,8 +189,7 @@
       x_arith_op2_q &amp;lt;= x_arith_op2_next;
       w_mux_q &amp;lt;= w_mux_next;
     end
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;The w_mux output needs to be connected to the register write port at the core level. Since we are always going to set the output of the arith block at the execute stage to the w_mux at the write back stage, and since the control module will set the appropriate register write address at this stage, this will enable us to write the appropriate value to the appropriate register at this pipeline stage.&lt;/p&gt;
 
@@ -217,14 +212,15 @@ add x6 x5 x4
 &lt;p&gt;We will need to save this as a hex file in &lt;code class=&quot;highlighter-rouge&quot;&gt;vsim/hex/add.hex&lt;/code&gt;.&lt;/p&gt;
 
 &lt;p&gt;Before running the simulation, we need to make sure our Makefile is correct after adding a lot of new source sv files. If we look at line 59 of our Makefile, we had added &lt;code class=&quot;highlighter-rouge&quot;&gt;-I../src&lt;/code&gt; there. So verilator should be able to pick up all files from the src directory. However, since we added a package in the &lt;code class=&quot;highlighter-rouge&quot;&gt;proc_pkg.sv&lt;/code&gt; file and this package is imported from other source files, it needs to be always compiled before the other files importing it. So, we are going to change the Makefile line 59 to this:&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&quot;language-Makefile&quot;&gt;VERILATOR_INPUT = tb/top.sv ../src/proc_pkg.sv -I../src -I./models -f input.vc sim_main.cpp
-&lt;/code&gt;&lt;/pre&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-make&quot; data-lang=&quot;make&quot;&gt;&lt;span class=&quot;nv&quot;&gt;VERILATOR_INPUT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; tb/top.sv ../src/proc_pkg.sv &lt;span class=&quot;nt&quot;&gt;-I&lt;/span&gt;../src &lt;span class=&quot;nt&quot;&gt;-I&lt;/span&gt;./models &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; input.vc sim_main.cpp&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;In other words, we are making sure that the &lt;code class=&quot;highlighter-rouge&quot;&gt;proc_pkg.sv&lt;/code&gt; file is compiled before other src sv files.&lt;/p&gt;
 
 &lt;p&gt;Now to run the simulation, we need to run this command from the vsim directory:&lt;/p&gt;
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;make &lt;span class=&quot;nv&quot;&gt;HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;hex/add.hex
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;make &lt;span class=&quot;nv&quot;&gt;HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;hex/add.hex&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
 &lt;p&gt;We are explicitly setting the &lt;code class=&quot;highlighter-rouge&quot;&gt;add.hex&lt;/code&gt; file path as the &lt;code class=&quot;highlighter-rouge&quot;&gt;HEX&lt;/code&gt; variable.&lt;/p&gt;
 
 &lt;p&gt;If everything worked as it should, we will see the following message at the end of the run log in the terminal:&lt;/p&gt;
@@ -245,7 +241,7 @@ To see waveforms, open vlt_dump.vcd in a waveform viewer
 
 &lt;p&gt;The way we are going to do this is we are going to look at rs1 and rs2 and if it matches with the rd of any subsequent stage, then the core is going to indicate a conflict and stall the new instruction at the decode stage until the conflict is gone. For example, if we see the instruction &lt;code class=&quot;highlighter-rouge&quot;&gt;add x1 x2 x2&lt;/code&gt; at the decode stage, and if either &lt;code class=&quot;highlighter-rouge&quot;&gt;x_rd&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;m_rd&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;w_rd&lt;/code&gt; holds  x2, then we will know there is a conflict. This code can be done in a combinational block:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&quot;language-Verilog&quot;&gt;  always_comb begin
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_comb begin
     if (reg1_addr != '0 &amp;amp;&amp;amp;
         (reg1_addr == x_rd || reg1_addr == m_rd || reg1_addr == w_rd))
       conflict = 1'b1;
@@ -254,8 +250,7 @@ To see waveforms, open vlt_dump.vcd in a waveform viewer
       conflict = 1'b1;
     else
       conflict = 1'b0;
-  end
-&lt;/code&gt;&lt;/pre&gt;
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;We need to make sure we implement the instruction stalling logic, which needs to hold the current instruction present at the decode stage, as well as stall the program counter from going any forward. So we will use the output signals &lt;code class=&quot;highlighter-rouge&quot;&gt;incr_pc_o&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;conflict_o&lt;/code&gt; which will go to the pc module and the fetch module respectively. We already have the logic for &lt;code class=&quot;highlighter-rouge&quot;&gt;incr_pc&lt;/code&gt; in the program counter. The logic for holding the last instruction needs to be implemented in the fetch module. For this we are going to make sure that the &lt;code class=&quot;highlighter-rouge&quot;&gt;inst_o&lt;/code&gt; signal works as before when &lt;code class=&quot;highlighter-rouge&quot;&gt;conflict_i&lt;/code&gt; is 0 and it holds the previous value of &lt;code class=&quot;highlighter-rouge&quot;&gt;inst_o&lt;/code&gt; when &lt;code class=&quot;highlighter-rouge&quot;&gt;conflict_i&lt;/code&gt; is 1.&lt;/p&gt;
 
@@ -344,164 +339,164 @@ add x5 x2 x2
 
 &lt;p&gt;We will use a parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;MEMSIZE&lt;/code&gt; to identify the size of the memory in bytes. We will make the default value of this parameter &lt;code class=&quot;highlighter-rouge&quot;&gt;'h10000&lt;/code&gt; which is 64kB of memory. Our memory model is going to be very simple and will be able to read/write 4 bytes at a time and only accept 4byte aligned memory addresses. To easily support this, we can just divide the memory size in bytes by 4 and use that number as the size of the memory space array where each element will be a 32 bit logic element. We will name this array &lt;code class=&quot;highlighter-rouge&quot;&gt;data&lt;/code&gt; and declare it the following way.&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;  &lt;span class=&quot;k&quot;&gt;parameter&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MEMSIZE&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;'h10000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// Has to be multiple of 4&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;localparam&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MEMSIZE_BY_4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MEMSIZE&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  parameter int MEMSIZE = 'h10000;  // Has to be multiple of 4
+  localparam int MEMSIZE_BY_4 = MEMSIZE / 4;
 
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MEMSIZE_BY_4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// MEMSIZE bytes&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+  logic [31:0] data[MEMSIZE_BY_4-1:0];  // MEMSIZE bytes&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;We need to know the address space offset where the generated machine code is going to reside. The programs we will generate will have the text section starting at a non zero address. And to make the simulation use less memory, we are only going to model the address starting form this address + 64kB. We will keep the text section offset into a parameter called &lt;code class=&quot;highlighter-rouge&quot;&gt;TEXT_OFFSET&lt;/code&gt; and the offset for the data section into &lt;code class=&quot;highlighter-rouge&quot;&gt;DATA_OFFSET&lt;/code&gt;. For now we can keep whatever default values in them and later when instantiating the memory model we can give the proper parameter values.&lt;/p&gt;
 
 &lt;p&gt;Outputting the data out will happen only when the enable signal is hi and the write signal is lo. In this simple model we are going to output the data instantly instead of waiting for the next clock cycle. However, we will use the internal busy signal to mask the data out. Later we will be able to use random or fixed pattern of the busy signal to verify that our processor core is able to stall properly when the memory is busy. The actual data out code would be very simple combinational logic and would look like this:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;  &lt;span class=&quot;k&quot;&gt;always_comb&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;data1_out_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;'0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_comb begin
+    data1_out_o = '0;
 
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wen1_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;en1_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;data1_busy_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
+    if (wen1_i == 1'b0 &amp;amp;&amp;amp;
+        en1_i == 1'b1 &amp;amp;&amp;amp;
+        data1_busy_o == 1'b0) begin
 
-      &lt;span class=&quot;n&quot;&gt;data1_out_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addr1_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TEXT_OFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+      data1_out_o = data[(addr1_i - TEXT_OFFSET)/4];
+    end
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Note that we would need something similar for the other memory port as well.&lt;/p&gt;
 
 &lt;p&gt;To implement the memory write logic into out model we are going to need to use the clock. The writing will happen only on the positive edge of the input clock and when both the applicable enable and write enable signals are hi. It could look something like this:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;  &lt;span class=&quot;k&quot;&gt;always_ff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;@&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;posedge&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clk_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wen1_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-      &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addr1_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TEXT_OFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data1_in_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  always_ff @ (posedge clk_i) begin
+    if (wen1_i == 1'b1) begin
+      data[(addr1_i - TEXT_OFFSET) / 4] &amp;lt;= data1_in_i;
+    end
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Again, we would need to implement something similar for the other memory port as well.&lt;/p&gt;
 
 &lt;p&gt;Finally, we need a way to load the memory content from input hex file at the beginning of simulation. For this we can make use of the Verilog &lt;code class=&quot;highlighter-rouge&quot;&gt;$readmemh&lt;/code&gt; command. This takes the hex file name as the first argument and the memory array as the second argument. Note, that this hex file is not the intel hex file. This file is a just ascii hex values. Moreover, we want a way to provide the name of the hexfile as argument when running the simulator. This way we would not have ot re-compile the verilated C++ code for running different hexfiles and we can do quick regression of all of our assembled code quickly. For this we can use the Verilog command &lt;code class=&quot;highlighter-rouge&quot;&gt;$value$plusargs&lt;/code&gt;, which takes a pattern as the first argument and the string variable to store the result into as the second argument (I personally don’t like passing argument as reference and then modifying them, but we are stuck with Verilog…). Our initial block inside the dual_port_mem module would look like this:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;  &lt;span class=&quot;k&quot;&gt;initial&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HEXFILE_FROM_ARG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt; 
-      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;($&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plusargs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text_hexfile=%s&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;display&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;INFO: loading %s&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;readmemh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-      &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;display&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ERROR opening hexfile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;($&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plusargs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;data_hexfile=%s&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;display&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;INFO: loading %s&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;readmemh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;memfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DATA_OFFSET&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TEXT_OFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-      &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;display&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ERROR opening hexfile&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;begin&lt;/span&gt;
-      &lt;span class=&quot;p&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;readmemh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;MEMFILE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  initial begin
+    if (HEXFILE_FROM_ARG) begin 
+      if ($value$plusargs(&quot;text_hexfile=%s&quot;, memfile)) begin
+        $display(&quot;INFO: loading %s&quot;, memfile);
+        $readmemh(memfile, data);
+      end else
+        $display(&quot;ERROR opening hexfile&quot;);
+      if ($value$plusargs(&quot;data_hexfile=%s&quot;, memfile)) begin
+        $display(&quot;INFO: loading %s&quot;, memfile);
+        $readmemh(memfile, data, (DATA_OFFSET - TEXT_OFFSET) / 4);
+      end else
+        $display(&quot;ERROR opening hexfile&quot;);
+    end else begin
+      $readmemh(MEMFILE, data);
+    end
+  end&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Here &lt;code class=&quot;highlighter-rouge&quot;&gt;memfile&lt;/code&gt; is a string and &lt;code class=&quot;highlighter-rouge&quot;&gt;MEMFILE&lt;/code&gt; is a string parameter that is set to a hexfile with all zeros as default. &lt;code class=&quot;highlighter-rouge&quot;&gt;HEXFILE_FROM_ARG&lt;/code&gt; is an int parameter that defaults to 0, but can be set as 1 from the instantiating module. This way from the top level we can provide either an explicit memory file or set &lt;code class=&quot;highlighter-rouge&quot;&gt;HEXFIRL_FROM_ARG&lt;/code&gt; to 1 to make the module load the memory file based on the simulator argument. The final memory model we are going to be using can be found &lt;a href=&quot;https://github.com/tonmoy18/riscv-cpu-blog/blob/post-01/vsim/models/dual_port_mem.sv&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h2 id=&quot;creating-the-testbench-top-and-the-processor-core-skeleton&quot;&gt;Creating the Testbench Top and the Processor Core Skeleton&lt;/h2&gt;
 &lt;p&gt;Next we are going to create the basic module file for our processor core. We will keep this file in src/core.sv. For now this is going to be just an empty shell with the inputs and outputs defined. It is going to look like this:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;&lt;span class=&quot;k&quot;&gt;module&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;core&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;rst_n_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;clk_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;module core(
+  rst_n_i,
+  clk_i,
   
-  &lt;span class=&quot;n&quot;&gt;dm_dout_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;dm_wen_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;dm_en_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;dm_din_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;dm_addr_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;dm_busy_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  dm_dout_i,
+  dm_wen_o,
+  dm_en_o,
+  dm_din_o,
+  dm_addr_o,
+  dm_busy_i,
   
-  &lt;span class=&quot;n&quot;&gt;im_dout_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;im_addr_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;im_busy_i&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  im_dout_i,
+  im_addr_o,
+  im_busy_i
+);
 
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rst_n_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clk_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  input logic rst_n_i;
+  input logic clk_i;
 
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_dout_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_wen_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_en_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_din_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_addr_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_busy_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  input logic [31:0] dm_dout_i;
+  output logic dm_wen_o;
+  output logic dm_en_o;
+  output logic [31:0] dm_din_o;
+  output logic [31:0] dm_addr_o;
+  input logic dm_busy_i;
 
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_dout_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_addr_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_busy_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  input logic [31:0] im_dout_i;
+  output logic [31:0] im_addr_o;
+  input logic im_busy_i;
 
-&lt;span class=&quot;k&quot;&gt;endmodule&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+endmodule&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;Our simulation top module is going to be very simple as well. We are going to give this module a creative name, “top”. This module will just instantiate the dual_port_mem and the core modules. We are going to declare some local signals and use them to connect the core and the dual port memory with proper corresponding signals. We are going to use the memory port 1 as the interface used by data memory and the memory port 2 as the instruction memory. Hence these signals are connected in this way in top.sv. Notice that we need to provide the values for the parameters &lt;code class=&quot;highlighter-rouge&quot;&gt;HEXFILE_FROM_ARG&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;TEXT_OFFSET&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;DATA_OFFSET&lt;/code&gt;. We want the memory model to use the simulator argument to load the initial memory values from. Furthermore, we want the text offset to be 32’h80000000, and the data offset to be 32’h80002000. These values are used by the rocket chip and would be easier to compile code using rocket chip’s link.ld. There is no reason these offset values can’t be something different. This module is going to have the reset and the clock signals as input, which will be driven from the verilator program. For communication with the outside world, we are going to create a very basic model of this functionality. Out “tohost” address is going to be 32’h80001000. To model data being sent to the host using a top level port, we are going to have the output signals tohost_int_o, and tohost_data_o. The idea being, whenever there is data on this port for the host, the int signal is going to be raised and the host needs to read it instantly. This simple logic can be modeled using these two lines of combinational code:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;  &lt;span class=&quot;k&quot;&gt;assign&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_wen&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;32'h80001000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;assign&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_data_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_din&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;'0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;  assign tohost_int_o = (dm_wen &amp;amp;&amp;amp; dm_addr == 32'h80001000);
+  assign tohost_data_o = tohost_int_o == 1'b1 ? dm_din : '0;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;p&gt;We are going to keep this file in &lt;code class=&quot;highlighter-rouge&quot;&gt;vsim/tb/top.sv&lt;/code&gt; location. And the entire file should look like this:&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;&lt;span class=&quot;k&quot;&gt;module&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;rst_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;clk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-  &lt;span class=&quot;n&quot;&gt;tohost_data_o&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-systemverilog&quot; data-lang=&quot;systemverilog&quot;&gt;module top(
+  rst_n,
+  clk,
+  tohost_int_o,
+  tohost_data_o
+);
 
-  &lt;span class=&quot;kt&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rst_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  input logic rst_n, clk;
 
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_data_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  output logic [31:0] tohost_data_o;
+  output logic tohost_int_o;
 
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_wen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_din&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  logic [31:0] dm_dout;
+  logic dm_wen;
+  logic [31:0] dm_din;
+  logic [31:0] dm_addr;
+  logic dm_busy;
 
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;logic&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;im_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  logic [31:0] im_dout;
+  logic [31:0] im_addr;
+  logic im_busy;
 
-  &lt;span class=&quot;n&quot;&gt;core&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;u_core&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clk_i&lt;/span&gt;          &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rst_n_i&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rst_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+  core u_core(
+    .clk_i          (clk),
+    .rst_n_i        (rst_n),
     
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_dout_i&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_en_o&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_en&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_wen_o&lt;/span&gt;       &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_wen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_din_o&lt;/span&gt;       &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_din&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_addr_o&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_busy_i&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    .dm_dout_i      (dm_dout),
+    .dm_en_o        (dm_en),
+    .dm_wen_o       (dm_wen),
+    .dm_din_o       (dm_din),
+    .dm_addr_o      (dm_addr),
+    .dm_busy_i      (dm_busy),
 
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_dout_i&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_addr_o&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_busy_i&lt;/span&gt;      &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    .im_dout_i      (im_dout),
+    .im_addr_o      (im_addr),
+    .im_busy_i      (im_busy)
+  );
 
-  &lt;span class=&quot;n&quot;&gt;dual_port_mem&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;#(&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HEXFILE_FROM_ARG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TEXT_OFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;32'h80000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DATA_OFFSET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;32'h80002000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;u_mem&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rst_n_i&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rst_n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clk_i&lt;/span&gt;          &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;clk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;en1_i&lt;/span&gt;          &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_en&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wen1_i&lt;/span&gt;         &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_wen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addr1_i&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data1_in_i&lt;/span&gt;     &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_din&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data1_out_o&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data1_busy_o&lt;/span&gt;   &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;en2_i&lt;/span&gt;          &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mb&quot;&gt;1'b1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;wen2_i&lt;/span&gt;         &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mb&quot;&gt;1'b0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addr2_i&lt;/span&gt;        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data2_in_i&lt;/span&gt;     &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;32'h0000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data2_out_o&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_dout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data2_busy_o&lt;/span&gt;   &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;im_busy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  dual_port_mem #(
+    .HEXFILE_FROM_ARG(1),
+    .TEXT_OFFSET(32'h80000000),
+    .DATA_OFFSET(32'h80002000)
+  ) u_mem (
+    .rst_n_i        (rst_n),
+    .clk_i          (clk),
+    .en1_i          (dm_en),
+    .wen1_i         (dm_wen),
+    .addr1_i        (dm_addr),
+    .data1_in_i     (dm_din),
+    .data1_out_o    (dm_dout),
+    .data1_busy_o   (dm_busy),
+    .en2_i          (1'b1),
+    .wen2_i         (1'b0),
+    .addr2_i        (im_addr),
+    .data2_in_i     (32'h0000),
+    .data2_out_o    (im_dout),
+    .data2_busy_o   (im_busy)
+  );
 
-  &lt;span class=&quot;k&quot;&gt;assign&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dm_wen&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;32'h80001000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;assign&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_data_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tohost_int_o&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;1'b1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dm_din&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;'0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  assign tohost_int_o = (dm_wen &amp;amp;&amp;amp; dm_addr == 32'h80001000);
+  assign tohost_data_o = tohost_int_o == 1'b1 ? dm_din : '0;
 
-&lt;span class=&quot;k&quot;&gt;endmodule&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+endmodule&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
 
 &lt;h2 id=&quot;running-the-simulation-and-viewing-signals&quot;&gt;Running the Simulation and Viewing Signals&lt;/h2&gt;
 &lt;p&gt;To run the simulation, we will need a top level c++ program that instantiates the top level SystemVerilog module and provides proper inputs and checks the expected outputs. We could have skipped a step and just instantiated the memory and the core in this program. But this way we get to keep the &lt;code class=&quot;highlighter-rouge&quot;&gt;top.sv&lt;/code&gt; unchanged and use it as the top level for any other non-verilator simulator what we may use later. I have created a cpp file by making slight modification to the sim_main.cpp file given as an example. We will save the modified cpp file in &lt;code class=&quot;highlighter-rouge&quot;&gt;vsim/sim_main.cpp&lt;/code&gt;. There is a lot going on in this file. The changes that we are going to make in this file includes adding the ability to run the program with an extra argument to set the logfile name. This will help us run multiple RISCV programs as regression tests. The other major change is inside the main function itself:&lt;/p&gt;
