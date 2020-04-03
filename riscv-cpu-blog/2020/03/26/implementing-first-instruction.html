@@ -15,7 +15,7 @@
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2020-03-26T21:07:00-05:00" />
 <script type="application/ld+json">
-{"url":"https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html"},"description":"Implementing our First Instruction In the last post we created a testbench, the models and looked at the necessary steps to set up our simulation environment. In this post we are going to dive right into creating the processor core itself. At the end of this post we will have looked into how to execute at least one RISC-V instruction.","@type":"BlogPosting","headline":"Implementing our First Instruction","dateModified":"2020-03-26T21:07:00-05:00","datePublished":"2020-03-26T21:07:00-05:00","@context":"https://schema.org"}</script>
+{"headline":"Implementing our First Instruction","dateModified":"2020-03-26T21:07:00-05:00","datePublished":"2020-03-26T21:07:00-05:00","description":"Implementing our First Instruction In the last post we created a testbench, the models and looked at the necessary steps to set up our simulation environment. In this post we are going to dive right into creating the processor core itself. At the end of this post we will have looked into how to execute at least one RISC-V instruction.","mainEntityOfPage":{"@type":"WebPage","@id":"https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html"},"@type":"BlogPosting","url":"https://tonmoy18.github.io/riscv-cpu-blog/2020/03/26/implementing-first-instruction.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/riscv-cpu-blog/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://tonmoy18.github.io/riscv-cpu-blog/feed.xml" title="Designing a RISC-V Processor Core" /></head>
 <body><header class="site-header" role="banner">
@@ -74,18 +74,18 @@
 
 <p>Design wise our program counter is going to be very simple. It will have the typical reset, clock inputs as well as a control signal to tell it to increment by 4 when needed. For now it will have one output that is the current value of the program counter. The program counter register needs to either hold the current value or increment when the relevant signal is high. The counter logic should look something like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_ff @(posedge clk_i, negedge rst_n_i) begin
-    if (rst_n_i == 1'b0) begin
-      pc_q &lt;= PC_RESET_VAL;
-    end else begin
-      pc_q &lt;= next_pc;
-    end
-  end
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_ff</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">,</span> <span class="kt">negedge</span> <span class="n">rst_n_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst_n_i</span> <span class="o">==</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">pc_q</span> <span class="o">&lt;=</span> <span class="n">PC_RESET_VAL</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">pc_q</span> <span class="o">&lt;=</span> <span class="n">next_pc</span><span class="p">;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    if (incr_pc_i == 1'b1) next_pc = pc_q + 'd4;
-    else next_pc = pc_q;
-  end</code></pre></figure>
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">incr_pc_i</span> <span class="o">==</span> <span class="mb">1'b1</span><span class="p">)</span> <span class="n">next_pc</span> <span class="o">=</span> <span class="n">pc_q</span> <span class="o">+</span> <span class="mi">'d4</span><span class="p">;</span>
+    <span class="k">else</span> <span class="n">next_pc</span> <span class="o">=</span> <span class="n">pc_q</span><span class="p">;</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>The complete program counter module up to this step can be found <a href="https://github.com/tonmoy18/riscv-cpu-blog/blob/post-02-intermediate/src/pc.sv">here</a></p>
 
@@ -99,48 +99,48 @@
 <h2 id="regfile">Regfile</h2>
 <p>The register file is the module that holds all 32 registers of the RISC-V processor. These include 31 actual registers and the zero register which always returns zero (and can not be written two). Since we do not need a physical register for the register zero, we will use an array of sized 31. The indexing of this array needs to start at 1 and end at 31. Since the address of the zero register is 0, this enables us to quickly decode the register address to the array index without using any kind of offset calculation. The array declaration will look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  logic [31:0] reg_content [31:1];</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">reg_content</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">1</span><span class="p">];</span></code></pre></figure>
 
 <p>We also need to read the registers with two different addresses simultaneously. We will use the read address values on the ports r1_addr_i and r2_addr_i to select the registers. The value of the selected registers using these address ports will be outputted on the ports d1out_o and d2out_o respectively. The read can happen in the same clock cycle the address is asserted. Hence the read logic can be in an always_comb block and the logic for both ports need to be independent. The logic is going to look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_comb begin
-    if (r1_addr_i == '0) begin
-      d1out_o = '0;
-    end else if (r1_addr_i == w_addr_i) begin
-      d1out_o = din_i;
-    end else begin
-      d1out_o = reg_content[r1_addr_i];
-    end
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">r1_addr_i</span> <span class="o">==</span> <span class="mb">'0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">d1out_o</span> <span class="o">=</span> <span class="mb">'0</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">r1_addr_i</span> <span class="o">==</span> <span class="n">w_addr_i</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">d1out_o</span> <span class="o">=</span> <span class="n">din_i</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">d1out_o</span> <span class="o">=</span> <span class="n">reg_content</span><span class="p">[</span><span class="n">r1_addr_i</span><span class="p">];</span>
+    <span class="k">end</span>
 
-    if (r2_addr_i == '0) begin
-      d2out_o = '0;
-    end else if (r2_addr_i == w_addr_i) begin
-      d2out_o = din_i;
-    end else begin
-      d2out_o = reg_content[r2_addr_i];
-    end
-  end</code></pre></figure>
+    <span class="k">if</span> <span class="p">(</span><span class="n">r2_addr_i</span> <span class="o">==</span> <span class="mb">'0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">d2out_o</span> <span class="o">=</span> <span class="mb">'0</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">r2_addr_i</span> <span class="o">==</span> <span class="n">w_addr_i</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">d2out_o</span> <span class="o">=</span> <span class="n">din_i</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">d2out_o</span> <span class="o">=</span> <span class="n">reg_content</span><span class="p">[</span><span class="n">r2_addr_i</span><span class="p">];</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>Similarly the register file can be written to using the ports w_addr_i and din_i ports. Since the address zero can not actually be written to, when the value of w_addr_i is set to 0, the writing will be effectively disabled. Hence, we can use the value 0 on the w_addr_i to keep the write port disabled as well when we are not using it. The writing logic needs to be in an always_ff block to make sure that the reg_content is treated as a “register”. It should look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_ff@(posedge clk_i, negedge rst_n_i) begin
-    if (rst_n_i != 1'b0) begin
-      if (w_addr_i != '0) begin
-        reg_content[w_addr_i] &lt;= din_i;
-      end
-    end
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_ff</span><span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">,</span> <span class="kt">negedge</span> <span class="n">rst_n_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst_n_i</span> <span class="o">!=</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">w_addr_i</span> <span class="o">!=</span> <span class="mb">'0</span><span class="p">)</span> <span class="k">begin</span>
+        <span class="n">reg_content</span><span class="p">[</span><span class="n">w_addr_i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">din_i</span><span class="p">;</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>To be able to debug easily in simulation, we are going to add an initial block at the bottom of the regfile code. Without this the registers will be populated with random data at the start of the simulation. We will put some known “random” values instead to make our life easier. Here is the initial block that I will be using:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  initial begin
-    reg_content[1] = 'd04;
-    reg_content[2] = 'd27;
-    reg_content[3] = 'd00;
-    reg_content[4] = 'd83;
-    reg_content[5] = 'd29;
-    reg_content[6] = 'd58;
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">initial</span> <span class="k">begin</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d04</span><span class="p">;</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d27</span><span class="p">;</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d00</span><span class="p">;</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d83</span><span class="p">;</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d29</span><span class="p">;</span>
+    <span class="n">reg_content</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="mi">'d58</span><span class="p">;</span>
+  <span class="k">end</span></code></pre></figure>
 
 <h2 id="control">Control</h2>
 <p>The control module will be responsible for decoding the instruction obtained from the fetch module. After decoding the instruction, the control module makes sure the proper control signals are sent to the proper modules at appropriate pipeline stage. In case of the R-Type instruction, the control module needs to read the appropriate register content from addresses rs1 and rs2 at the decode stage.</p>
@@ -151,92 +151,92 @@
 
 <p>For example, the <code class="highlighter-rouge">d_opcode</code> is just the bits 6 to 0 of the instruction coming out of the fetching module as input into the control module <code class="highlighter-rouge">d_ints_i</code>. This will be used to generate the <code class="highlighter-rouge">x_opcode</code> registered signal one clock cycle later. Similarly <code class="highlighter-rouge">m_opcode</code> is the same opcode value delayed by one more clock cycle and <code class="highlighter-rouge">w_opcode</code> is the opcode of that instruction at it’s writeback stage. We will eventually need to implement a mechanism for stalling the pipeline based on data conflict. However, for now we will assume no such thing and just implement the stages as if there is no conflict ever.</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog"> always_ff @(posedge clk_i, negedge rst_n_i) begin
-    if (rst_n_i == 1'b0) begin      
-      x_opcode &lt;= '0;
-      x_rd &lt;= '0;
-      m_opcode &lt;= '0;
-      m_rd &lt;= '0;
-      m_funct3_q &lt;= '0;
-      w_opcode &lt;= '0;
-      w_rd &lt;= '0;
-    end else begin
-      x_opcode &lt;= next_x_opcode;
-      x_rd &lt;= next_x_rd;
-      m_opcode &lt;= next_m_opcode;
-      m_rd &lt;= next_m_rd;
-      m_funct3_q &lt;= (x_opcode == LOAD_OPCODE) ? x_funct3_q : '0;
-      w_opcode &lt;= next_w_opcode;
-      w_rd &lt;= next_w_rd;
-    end
-  end
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog"> <span class="k">always_ff</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">,</span> <span class="kt">negedge</span> <span class="n">rst_n_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst_n_i</span> <span class="o">==</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>      
+      <span class="n">x_opcode</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">x_rd</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">m_opcode</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">m_rd</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">m_funct3_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">w_opcode</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">w_rd</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">x_opcode</span> <span class="o">&lt;=</span> <span class="n">next_x_opcode</span><span class="p">;</span>
+      <span class="n">x_rd</span> <span class="o">&lt;=</span> <span class="n">next_x_rd</span><span class="p">;</span>
+      <span class="n">m_opcode</span> <span class="o">&lt;=</span> <span class="n">next_m_opcode</span><span class="p">;</span>
+      <span class="n">m_rd</span> <span class="o">&lt;=</span> <span class="n">next_m_rd</span><span class="p">;</span>
+      <span class="n">m_funct3_q</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">x_opcode</span> <span class="o">==</span> <span class="n">LOAD_OPCODE</span><span class="p">)</span> <span class="o">?</span> <span class="n">x_funct3_q</span> <span class="o">:</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">w_opcode</span> <span class="o">&lt;=</span> <span class="n">next_w_opcode</span><span class="p">;</span>
+      <span class="n">w_rd</span> <span class="o">&lt;=</span> <span class="n">next_w_rd</span><span class="p">;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
 
-  always_ff @(posedge clk_i, negedge rst_n_i) begin
-    if (rst_n_i == 1'b0) begin
-      x_funct3_q &lt;= '0;
-      x_funct7_30_q &lt;= '0;
-    end else begin
-      x_funct3_q &lt;= x_funct3_next;
-      x_funct7_30_q &lt;= x_funct7_30_next;
-    end
-  end
+  <span class="k">always_ff</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">,</span> <span class="kt">negedge</span> <span class="n">rst_n_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst_n_i</span> <span class="o">==</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">x_funct3_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">x_funct7_30_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">x_funct3_q</span> <span class="o">&lt;=</span> <span class="n">x_funct3_next</span><span class="p">;</span>
+      <span class="n">x_funct7_30_q</span> <span class="o">&lt;=</span> <span class="n">x_funct7_30_next</span><span class="p">;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    next_x_rd = d_rd;
-    next_m_rd = x_rd;
-    next_w_rd = m_rd;
-    next_x_opcode = d_opcode;
-    next_m_opcode = x_opcode;
-    next_w_opcode = m_opcode;
-  end
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">next_x_rd</span> <span class="o">=</span> <span class="n">d_rd</span><span class="p">;</span>
+    <span class="n">next_m_rd</span> <span class="o">=</span> <span class="n">x_rd</span><span class="p">;</span>
+    <span class="n">next_w_rd</span> <span class="o">=</span> <span class="n">m_rd</span><span class="p">;</span>
+    <span class="n">next_x_opcode</span> <span class="o">=</span> <span class="n">d_opcode</span><span class="p">;</span>
+    <span class="n">next_m_opcode</span> <span class="o">=</span> <span class="n">x_opcode</span><span class="p">;</span>
+    <span class="n">next_w_opcode</span> <span class="o">=</span> <span class="n">m_opcode</span><span class="p">;</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    d_rd = '0; 
-    x_funct3_next = '0;
-    x_funct7_30_next = 1'b0;
-    case (d_opcode)
-      RTYPE_OPCODE: begin
-        d_rd = d_inst_i[11:7];
-        x_funct3_next = d_inst_i[14:12];
-        x_funct7_30_next = d_inst_i[30];
-      end
-    endcase
-  end</code></pre></figure>
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">d_rd</span> <span class="o">=</span> <span class="mb">'0</span><span class="p">;</span> 
+    <span class="n">x_funct3_next</span> <span class="o">=</span> <span class="mb">'0</span><span class="p">;</span>
+    <span class="n">x_funct7_30_next</span> <span class="o">=</span> <span class="mb">1'b0</span><span class="p">;</span>
+    <span class="k">case</span> <span class="p">(</span><span class="n">d_opcode</span><span class="p">)</span>
+      <span class="nl">RTYPE_OPCODE:</span> <span class="k">begin</span>
+        <span class="n">d_rd</span> <span class="o">=</span> <span class="n">d_inst_i</span><span class="p">[</span><span class="mi">11</span><span class="o">:</span><span class="mi">7</span><span class="p">];</span>
+        <span class="n">x_funct3_next</span> <span class="o">=</span> <span class="n">d_inst_i</span><span class="p">[</span><span class="mi">14</span><span class="o">:</span><span class="mi">12</span><span class="p">];</span>
+        <span class="n">x_funct7_30_next</span> <span class="o">=</span> <span class="n">d_inst_i</span><span class="p">[</span><span class="mi">30</span><span class="p">];</span>
+      <span class="k">end</span>
+    <span class="k">endcase</span>
+  <span class="k">end</span></code></pre></figure>
 
 <h2 id="datapath">Datapath</h2>
 <p>The datapath module will redirect the data to and from the arith, logic, shift units as well as diverting it to and from the data memory unit and the register write back port based on the instruction that is in the appropriate pipeline stage. We will use the registered signals x_arith_op1 and x_arith_op2 as inputs to the arith block, m_alu_data as the registered signal that will capture either the output of the arith, the logic or the shift block and the registered signal w_mux to capture either the output of the data memory or the m_alu_data register. Since we are just going to implement the ADD instruction for now, there is going to be only one data path. We will hard wire this data path for now. The combinational logic for this is going to look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_comb begin
-    m_alu_data_next = arith_out_i;
-  end
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">m_alu_data_next</span> <span class="o">=</span> <span class="n">arith_out_i</span><span class="p">;</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    x_arith_op1_next = reg1_data_i;
-  end
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">x_arith_op1_next</span> <span class="o">=</span> <span class="n">reg1_data_i</span><span class="p">;</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    x_arith_op2_next = reg2_data_i;
-  end
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">x_arith_op2_next</span> <span class="o">=</span> <span class="n">reg2_data_i</span><span class="p">;</span>
+  <span class="k">end</span>
 
-  always_comb begin
-    w_mux_next = m_alu_data_q;
-  end</code></pre></figure>
+  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">w_mux_next</span> <span class="o">=</span> <span class="n">m_alu_data_q</span><span class="p">;</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>The registered signals generated from these signals need to be inside corresponding always_ff block as well. This always_ff block once implemented will be as follows:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_ff @(posedge clk_i, negedge rst_n_i) begin
-    if (rst_n_i == 1'b0) begin
-      m_alu_data_q &lt;= '0;
-      x_arith_op1_q &lt;= '0;
-      x_arith_op2_q &lt;= '0;
-      w_mux_q &lt;= '0;
-  end else begin
-      m_alu_data_q &lt;= m_alu_data_next;
-      x_arith_op1_q &lt;= x_arith_op1_next;
-      x_arith_op2_q &lt;= x_arith_op2_next;
-      w_mux_q &lt;= w_mux_next;
-    end
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_ff</span> <span class="o">@</span><span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">,</span> <span class="kt">negedge</span> <span class="n">rst_n_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst_n_i</span> <span class="o">==</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">m_alu_data_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">x_arith_op1_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">x_arith_op2_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+      <span class="n">w_mux_q</span> <span class="o">&lt;=</span> <span class="mb">'0</span><span class="p">;</span>
+  <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="n">m_alu_data_q</span> <span class="o">&lt;=</span> <span class="n">m_alu_data_next</span><span class="p">;</span>
+      <span class="n">x_arith_op1_q</span> <span class="o">&lt;=</span> <span class="n">x_arith_op1_next</span><span class="p">;</span>
+      <span class="n">x_arith_op2_q</span> <span class="o">&lt;=</span> <span class="n">x_arith_op2_next</span><span class="p">;</span>
+      <span class="n">w_mux_q</span> <span class="o">&lt;=</span> <span class="n">w_mux_next</span><span class="p">;</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>The w_mux output needs to be connected to the register write port at the core level. Since we are always going to set the output of the arith block at the execute stage to the w_mux at the write back stage, and since the control module will set the appropriate register write address at this stage, this will enable us to write the appropriate value to the appropriate register at this pipeline stage.</p>
 
@@ -288,16 +288,16 @@ To see waveforms, open vlt_dump.vcd in a waveform viewer
 
 <p>The way we are going to do this is we are going to look at rs1 and rs2 and if it matches with the rd of any subsequent stage, then the core is going to indicate a conflict and stall the new instruction at the decode stage until the conflict is gone. For example, if we see the instruction <code class="highlighter-rouge">add x1 x2 x2</code> at the decode stage, and if either <code class="highlighter-rouge">x_rd</code>, <code class="highlighter-rouge">m_rd</code> or <code class="highlighter-rouge">w_rd</code> holds  x2, then we will know there is a conflict. This code can be done in a combinational block:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_comb begin
-    if (reg1_addr != '0 &amp;&amp;
-        (reg1_addr == x_rd || reg1_addr == m_rd || reg1_addr == w_rd))
-      conflict = 1'b1;
-    else if (reg2_addr != '0 &amp;&amp;
-             (reg2_addr == x_rd || reg2_addr == m_rd || reg2_addr == w_rd))
-      conflict = 1'b1;
-    else
-      conflict = 1'b0;
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">reg1_addr</span> <span class="o">!=</span> <span class="mb">'0</span> <span class="o">&amp;&amp;</span>
+        <span class="p">(</span><span class="n">reg1_addr</span> <span class="o">==</span> <span class="n">x_rd</span> <span class="o">||</span> <span class="n">reg1_addr</span> <span class="o">==</span> <span class="n">m_rd</span> <span class="o">||</span> <span class="n">reg1_addr</span> <span class="o">==</span> <span class="n">w_rd</span><span class="p">))</span>
+      <span class="n">conflict</span> <span class="o">=</span> <span class="mb">1'b1</span><span class="p">;</span>
+    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">reg2_addr</span> <span class="o">!=</span> <span class="mb">'0</span> <span class="o">&amp;&amp;</span>
+             <span class="p">(</span><span class="n">reg2_addr</span> <span class="o">==</span> <span class="n">x_rd</span> <span class="o">||</span> <span class="n">reg2_addr</span> <span class="o">==</span> <span class="n">m_rd</span> <span class="o">||</span> <span class="n">reg2_addr</span> <span class="o">==</span> <span class="n">w_rd</span><span class="p">))</span>
+      <span class="n">conflict</span> <span class="o">=</span> <span class="mb">1'b1</span><span class="p">;</span>
+    <span class="k">else</span>
+      <span class="n">conflict</span> <span class="o">=</span> <span class="mb">1'b0</span><span class="p">;</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>We need to make sure we implement the instruction stalling logic, which needs to hold the current instruction present at the decode stage, as well as stall the program counter from going any forward. So we will use the output signals <code class="highlighter-rouge">incr_pc_o</code> and <code class="highlighter-rouge">conflict_o</code> which will go to the pc module and the fetch module respectively. We already have the logic for <code class="highlighter-rouge">incr_pc</code> in the program counter. The logic for holding the last instruction needs to be implemented in the fetch module. For this we are going to make sure that the <code class="highlighter-rouge">inst_o</code> signal works as before when <code class="highlighter-rouge">conflict_i</code> is 0 and it holds the previous value of <code class="highlighter-rouge">inst_o</code> when <code class="highlighter-rouge">conflict_i</code> is 1.</p>
 

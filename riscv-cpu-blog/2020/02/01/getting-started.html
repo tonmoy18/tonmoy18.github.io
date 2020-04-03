@@ -15,7 +15,7 @@
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2020-02-01T19:36:25-06:00" />
 <script type="application/ld+json">
-{"url":"https://tonmoy18.github.io/riscv-cpu-blog/2020/02/01/getting-started.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://tonmoy18.github.io/riscv-cpu-blog/2020/02/01/getting-started.html"},"description":"Simulating the Skeleton of a Processor Core This is the first post in our multi series blog describing the process of designing a RISC-V processor core using a hardware definition language, namely SystemVerilog. In this post we are not going to go much into the process of designing the processor core itself. Rather, this post will focus on the getting started part, which we need to accomplish before implement the actual processor design.","@type":"BlogPosting","headline":"Simulating the Skeleton of a Processor Core","dateModified":"2020-02-01T19:36:25-06:00","datePublished":"2020-02-01T19:36:25-06:00","@context":"https://schema.org"}</script>
+{"headline":"Simulating the Skeleton of a Processor Core","dateModified":"2020-02-01T19:36:25-06:00","datePublished":"2020-02-01T19:36:25-06:00","description":"Simulating the Skeleton of a Processor Core This is the first post in our multi series blog describing the process of designing a RISC-V processor core using a hardware definition language, namely SystemVerilog. In this post we are not going to go much into the process of designing the processor core itself. Rather, this post will focus on the getting started part, which we need to accomplish before implement the actual processor design.","mainEntityOfPage":{"@type":"WebPage","@id":"https://tonmoy18.github.io/riscv-cpu-blog/2020/02/01/getting-started.html"},"@type":"BlogPosting","url":"https://tonmoy18.github.io/riscv-cpu-blog/2020/02/01/getting-started.html","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/riscv-cpu-blog/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://tonmoy18.github.io/riscv-cpu-blog/feed.xml" title="Designing a RISC-V Processor Core" /></head>
 <body><header class="site-header" role="banner">
@@ -110,164 +110,164 @@
 
 <p>We will use a parameter <code class="highlighter-rouge">MEMSIZE</code> to identify the size of the memory in bytes. We will make the default value of this parameter <code class="highlighter-rouge">'h10000</code> which is 64kB of memory. Our memory model is going to be very simple and will be able to read/write 4 bytes at a time and only accept 4byte aligned memory addresses. To easily support this, we can just divide the memory size in bytes by 4 and use that number as the size of the memory space array where each element will be a 32 bit logic element. We will name this array <code class="highlighter-rouge">data</code> and declare it the following way.</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  parameter int MEMSIZE = 'h10000;  // Has to be multiple of 4
-  localparam int MEMSIZE_BY_4 = MEMSIZE / 4;
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">parameter</span> <span class="kt">int</span> <span class="n">MEMSIZE</span> <span class="o">=</span> <span class="mh">'h10000</span><span class="p">;</span>  <span class="c1">// Has to be multiple of 4</span>
+  <span class="k">localparam</span> <span class="kt">int</span> <span class="n">MEMSIZE_BY_4</span> <span class="o">=</span> <span class="n">MEMSIZE</span> <span class="o">/</span> <span class="mi">4</span><span class="p">;</span>
 
-  logic [31:0] data[MEMSIZE_BY_4-1:0];  // MEMSIZE bytes</code></pre></figure>
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">data</span><span class="p">[</span><span class="n">MEMSIZE_BY_4</span><span class="o">-</span><span class="mi">1</span><span class="o">:</span><span class="mi">0</span><span class="p">];</span>  <span class="c1">// MEMSIZE bytes</span></code></pre></figure>
 
 <p>We need to know the address space offset where the generated machine code is going to reside. The programs we will generate will have the text section starting at a non zero address. And to make the simulation use less memory, we are only going to model the address starting form this address + 64kB. We will keep the text section offset into a parameter called <code class="highlighter-rouge">TEXT_OFFSET</code> and the offset for the data section into <code class="highlighter-rouge">DATA_OFFSET</code>. For now we can keep whatever default values in them and later when instantiating the memory model we can give the proper parameter values.</p>
 
 <p>Outputting the data out will happen only when the enable signal is hi and the write signal is lo. In this simple model we are going to output the data instantly instead of waiting for the next clock cycle. However, we will use the internal busy signal to mask the data out. Later we will be able to use random or fixed pattern of the busy signal to verify that our processor core is able to stall properly when the memory is busy. The actual data out code would be very simple combinational logic and would look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_comb begin
-    data1_out_o = '0;
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_comb</span> <span class="k">begin</span>
+    <span class="n">data1_out_o</span> <span class="o">=</span> <span class="mb">'0</span><span class="p">;</span>
 
-    if (wen1_i == 1'b0 &amp;&amp;
-        en1_i == 1'b1 &amp;&amp;
-        data1_busy_o == 1'b0) begin
+    <span class="k">if</span> <span class="p">(</span><span class="n">wen1_i</span> <span class="o">==</span> <span class="mb">1'b0</span> <span class="o">&amp;&amp;</span>
+        <span class="n">en1_i</span> <span class="o">==</span> <span class="mb">1'b1</span> <span class="o">&amp;&amp;</span>
+        <span class="n">data1_busy_o</span> <span class="o">==</span> <span class="mb">1'b0</span><span class="p">)</span> <span class="k">begin</span>
 
-      data1_out_o = data[(addr1_i - TEXT_OFFSET)/4];
-    end
-  end</code></pre></figure>
+      <span class="n">data1_out_o</span> <span class="o">=</span> <span class="n">data</span><span class="p">[(</span><span class="n">addr1_i</span> <span class="o">-</span> <span class="n">TEXT_OFFSET</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span><span class="p">];</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>Note that we would need something similar for the other memory port as well.</p>
 
 <p>To implement the memory write logic into out model we are going to need to use the clock. The writing will happen only on the positive edge of the input clock and when both the applicable enable and write enable signals are hi. It could look something like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  always_ff @ (posedge clk_i) begin
-    if (wen1_i == 1'b1) begin
-      data[(addr1_i - TEXT_OFFSET) / 4] &lt;= data1_in_i;
-    end
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">always_ff</span> <span class="o">@</span> <span class="p">(</span><span class="kt">posedge</span> <span class="n">clk_i</span><span class="p">)</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">wen1_i</span> <span class="o">==</span> <span class="mb">1'b1</span><span class="p">)</span> <span class="k">begin</span>
+      <span class="n">data</span><span class="p">[(</span><span class="n">addr1_i</span> <span class="o">-</span> <span class="n">TEXT_OFFSET</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">data1_in_i</span><span class="p">;</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>Again, we would need to implement something similar for the other memory port as well.</p>
 
 <p>Finally, we need a way to load the memory content from input hex file at the beginning of simulation. For this we can make use of the Verilog <code class="highlighter-rouge">$readmemh</code> command. This takes the hex file name as the first argument and the memory array as the second argument. Note, that this hex file is not the intel hex file. This file is a just ascii hex values. Moreover, we want a way to provide the name of the hexfile as argument when running the simulator. This way we would not have ot re-compile the verilated C++ code for running different hexfiles and we can do quick regression of all of our assembled code quickly. For this we can use the Verilog command <code class="highlighter-rouge">$value$plusargs</code>, which takes a pattern as the first argument and the string variable to store the result into as the second argument (I personally don’t like passing argument as reference and then modifying them, but we are stuck with Verilog…). Our initial block inside the dual_port_mem module would look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  initial begin
-    if (HEXFILE_FROM_ARG) begin 
-      if ($value$plusargs("text_hexfile=%s", memfile)) begin
-        $display("INFO: loading %s", memfile);
-        $readmemh(memfile, data);
-      end else
-        $display("ERROR opening hexfile");
-      if ($value$plusargs("data_hexfile=%s", memfile)) begin
-        $display("INFO: loading %s", memfile);
-        $readmemh(memfile, data, (DATA_OFFSET - TEXT_OFFSET) / 4);
-      end else
-        $display("ERROR opening hexfile");
-    end else begin
-      $readmemh(MEMFILE, data);
-    end
-  end</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">initial</span> <span class="k">begin</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">HEXFILE_FROM_ARG</span><span class="p">)</span> <span class="k">begin</span> 
+      <span class="k">if</span> <span class="p">($</span><span class="n">value</span><span class="p">$</span><span class="n">plusargs</span><span class="p">(</span><span class="s">"text_hexfile=%s"</span><span class="p">,</span> <span class="n">memfile</span><span class="p">))</span> <span class="k">begin</span>
+        <span class="p">$</span><span class="nb">display</span><span class="p">(</span><span class="s">"INFO: loading %s"</span><span class="p">,</span> <span class="n">memfile</span><span class="p">);</span>
+        <span class="p">$</span><span class="nb">readmemh</span><span class="p">(</span><span class="n">memfile</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+      <span class="k">end</span> <span class="k">else</span>
+        <span class="p">$</span><span class="nb">display</span><span class="p">(</span><span class="s">"ERROR opening hexfile"</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">($</span><span class="n">value</span><span class="p">$</span><span class="n">plusargs</span><span class="p">(</span><span class="s">"data_hexfile=%s"</span><span class="p">,</span> <span class="n">memfile</span><span class="p">))</span> <span class="k">begin</span>
+        <span class="p">$</span><span class="nb">display</span><span class="p">(</span><span class="s">"INFO: loading %s"</span><span class="p">,</span> <span class="n">memfile</span><span class="p">);</span>
+        <span class="p">$</span><span class="nb">readmemh</span><span class="p">(</span><span class="n">memfile</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">DATA_OFFSET</span> <span class="o">-</span> <span class="n">TEXT_OFFSET</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span><span class="p">);</span>
+      <span class="k">end</span> <span class="k">else</span>
+        <span class="p">$</span><span class="nb">display</span><span class="p">(</span><span class="s">"ERROR opening hexfile"</span><span class="p">);</span>
+    <span class="k">end</span> <span class="k">else</span> <span class="k">begin</span>
+      <span class="p">$</span><span class="nb">readmemh</span><span class="p">(</span><span class="n">MEMFILE</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+    <span class="k">end</span>
+  <span class="k">end</span></code></pre></figure>
 
 <p>Here <code class="highlighter-rouge">memfile</code> is a string and <code class="highlighter-rouge">MEMFILE</code> is a string parameter that is set to a hexfile with all zeros as default. <code class="highlighter-rouge">HEXFILE_FROM_ARG</code> is an int parameter that defaults to 0, but can be set as 1 from the instantiating module. This way from the top level we can provide either an explicit memory file or set <code class="highlighter-rouge">HEXFIRL_FROM_ARG</code> to 1 to make the module load the memory file based on the simulator argument. The final memory model we are going to be using can be found <a href="https://github.com/tonmoy18/riscv-cpu-blog/blob/post-01/vsim/models/dual_port_mem.sv">here</a>.</p>
 
 <h2 id="creating-the-testbench-top-and-the-processor-core-skeleton">Creating the Testbench Top and the Processor Core Skeleton</h2>
 <p>Next we are going to create the basic module file for our processor core. We will keep this file in src/core.sv. For now this is going to be just an empty shell with the inputs and outputs defined. It is going to look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">module core(
-  rst_n_i,
-  clk_i,
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog"><span class="k">module</span> <span class="n">core</span><span class="p">(</span>
+  <span class="n">rst_n_i</span><span class="p">,</span>
+  <span class="n">clk_i</span><span class="p">,</span>
   
-  dm_dout_i,
-  dm_wen_o,
-  dm_en_o,
-  dm_din_o,
-  dm_addr_o,
-  dm_busy_i,
+  <span class="n">dm_dout_i</span><span class="p">,</span>
+  <span class="n">dm_wen_o</span><span class="p">,</span>
+  <span class="n">dm_en_o</span><span class="p">,</span>
+  <span class="n">dm_din_o</span><span class="p">,</span>
+  <span class="n">dm_addr_o</span><span class="p">,</span>
+  <span class="n">dm_busy_i</span><span class="p">,</span>
   
-  im_dout_i,
-  im_addr_o,
-  im_busy_i
-);
+  <span class="n">im_dout_i</span><span class="p">,</span>
+  <span class="n">im_addr_o</span><span class="p">,</span>
+  <span class="n">im_busy_i</span>
+<span class="p">);</span>
 
-  input logic rst_n_i;
-  input logic clk_i;
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="n">rst_n_i</span><span class="p">;</span>
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="n">clk_i</span><span class="p">;</span>
 
-  input logic [31:0] dm_dout_i;
-  output logic dm_wen_o;
-  output logic dm_en_o;
-  output logic [31:0] dm_din_o;
-  output logic [31:0] dm_addr_o;
-  input logic dm_busy_i;
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_dout_i</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="n">dm_wen_o</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="n">dm_en_o</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_din_o</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_addr_o</span><span class="p">;</span>
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="n">dm_busy_i</span><span class="p">;</span>
 
-  input logic [31:0] im_dout_i;
-  output logic [31:0] im_addr_o;
-  input logic im_busy_i;
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">im_dout_i</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">im_addr_o</span><span class="p">;</span>
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="n">im_busy_i</span><span class="p">;</span>
 
-endmodule</code></pre></figure>
+<span class="k">endmodule</span></code></pre></figure>
 
 <p>Our simulation top module is going to be very simple as well. We are going to give this module a creative name, “top”. This module will just instantiate the dual_port_mem and the core modules. We are going to declare some local signals and use them to connect the core and the dual port memory with proper corresponding signals. We are going to use the memory port 1 as the interface used by data memory and the memory port 2 as the instruction memory. Hence these signals are connected in this way in top.sv. Notice that we need to provide the values for the parameters <code class="highlighter-rouge">HEXFILE_FROM_ARG</code>, <code class="highlighter-rouge">TEXT_OFFSET</code>, and <code class="highlighter-rouge">DATA_OFFSET</code>. We want the memory model to use the simulator argument to load the initial memory values from. Furthermore, we want the text offset to be 32’h80000000, and the data offset to be 32’h80002000. These values are used by the rocket chip and would be easier to compile code using rocket chip’s link.ld. There is no reason these offset values can’t be something different. This module is going to have the reset and the clock signals as input, which will be driven from the verilator program. For communication with the outside world, we are going to create a very basic model of this functionality. Out “tohost” address is going to be 32’h80001000. To model data being sent to the host using a top level port, we are going to have the output signals tohost_int_o, and tohost_data_o. The idea being, whenever there is data on this port for the host, the int signal is going to be raised and the host needs to read it instantly. This simple logic can be modeled using these two lines of combinational code:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">  assign tohost_int_o = (dm_wen &amp;&amp; dm_addr == 32'h80001000);
-  assign tohost_data_o = tohost_int_o == 1'b1 ? dm_din : '0;</code></pre></figure>
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog">  <span class="k">assign</span> <span class="n">tohost_int_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">dm_wen</span> <span class="o">&amp;&amp;</span> <span class="n">dm_addr</span> <span class="o">==</span> <span class="mh">32'h80001000</span><span class="p">);</span>
+  <span class="k">assign</span> <span class="n">tohost_data_o</span> <span class="o">=</span> <span class="n">tohost_int_o</span> <span class="o">==</span> <span class="mb">1'b1</span> <span class="o">?</span> <span class="n">dm_din</span> <span class="o">:</span> <span class="mb">'0</span><span class="p">;</span></code></pre></figure>
 
 <p>We are going to keep this file in <code class="highlighter-rouge">vsim/tb/top.sv</code> location. And the entire file should look like this:</p>
 
-<figure class="highlight"><pre><code class="language-systemverilog" data-lang="systemverilog">module top(
-  rst_n,
-  clk,
-  tohost_int_o,
-  tohost_data_o
-);
+<figure class="highlight"><pre><code class="language-verilog" data-lang="verilog"><span class="k">module</span> <span class="n">top</span><span class="p">(</span>
+  <span class="n">rst_n</span><span class="p">,</span>
+  <span class="n">clk</span><span class="p">,</span>
+  <span class="n">tohost_int_o</span><span class="p">,</span>
+  <span class="n">tohost_data_o</span>
+<span class="p">);</span>
 
-  input logic rst_n, clk;
+  <span class="kt">input</span> <span class="kt">logic</span> <span class="n">rst_n</span><span class="p">,</span> <span class="n">clk</span><span class="p">;</span>
 
-  output logic [31:0] tohost_data_o;
-  output logic tohost_int_o;
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">tohost_data_o</span><span class="p">;</span>
+  <span class="kt">output</span> <span class="kt">logic</span> <span class="n">tohost_int_o</span><span class="p">;</span>
 
-  logic [31:0] dm_dout;
-  logic dm_wen;
-  logic [31:0] dm_din;
-  logic [31:0] dm_addr;
-  logic dm_busy;
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_dout</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="n">dm_wen</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_din</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">dm_addr</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="n">dm_busy</span><span class="p">;</span>
 
-  logic [31:0] im_dout;
-  logic [31:0] im_addr;
-  logic im_busy;
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">im_dout</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="p">[</span><span class="mi">31</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span> <span class="n">im_addr</span><span class="p">;</span>
+  <span class="kt">logic</span> <span class="n">im_busy</span><span class="p">;</span>
 
-  core u_core(
-    .clk_i          (clk),
-    .rst_n_i        (rst_n),
+  <span class="n">core</span> <span class="n">u_core</span><span class="p">(</span>
+    <span class="p">.</span><span class="n">clk_i</span>          <span class="p">(</span><span class="n">clk</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">rst_n_i</span>        <span class="p">(</span><span class="n">rst_n</span><span class="p">),</span>
     
-    .dm_dout_i      (dm_dout),
-    .dm_en_o        (dm_en),
-    .dm_wen_o       (dm_wen),
-    .dm_din_o       (dm_din),
-    .dm_addr_o      (dm_addr),
-    .dm_busy_i      (dm_busy),
+    <span class="p">.</span><span class="n">dm_dout_i</span>      <span class="p">(</span><span class="n">dm_dout</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">dm_en_o</span>        <span class="p">(</span><span class="n">dm_en</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">dm_wen_o</span>       <span class="p">(</span><span class="n">dm_wen</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">dm_din_o</span>       <span class="p">(</span><span class="n">dm_din</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">dm_addr_o</span>      <span class="p">(</span><span class="n">dm_addr</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">dm_busy_i</span>      <span class="p">(</span><span class="n">dm_busy</span><span class="p">),</span>
 
-    .im_dout_i      (im_dout),
-    .im_addr_o      (im_addr),
-    .im_busy_i      (im_busy)
-  );
+    <span class="p">.</span><span class="n">im_dout_i</span>      <span class="p">(</span><span class="n">im_dout</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">im_addr_o</span>      <span class="p">(</span><span class="n">im_addr</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">im_busy_i</span>      <span class="p">(</span><span class="n">im_busy</span><span class="p">)</span>
+  <span class="p">);</span>
 
-  dual_port_mem #(
-    .HEXFILE_FROM_ARG(1),
-    .TEXT_OFFSET(32'h80000000),
-    .DATA_OFFSET(32'h80002000)
-  ) u_mem (
-    .rst_n_i        (rst_n),
-    .clk_i          (clk),
-    .en1_i          (dm_en),
-    .wen1_i         (dm_wen),
-    .addr1_i        (dm_addr),
-    .data1_in_i     (dm_din),
-    .data1_out_o    (dm_dout),
-    .data1_busy_o   (dm_busy),
-    .en2_i          (1'b1),
-    .wen2_i         (1'b0),
-    .addr2_i        (im_addr),
-    .data2_in_i     (32'h0000),
-    .data2_out_o    (im_dout),
-    .data2_busy_o   (im_busy)
-  );
+  <span class="n">dual_port_mem</span> <span class="p">#(</span>
+    <span class="p">.</span><span class="n">HEXFILE_FROM_ARG</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">TEXT_OFFSET</span><span class="p">(</span><span class="mh">32'h80000000</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">DATA_OFFSET</span><span class="p">(</span><span class="mh">32'h80002000</span><span class="p">)</span>
+  <span class="p">)</span> <span class="n">u_mem</span> <span class="p">(</span>
+    <span class="p">.</span><span class="n">rst_n_i</span>        <span class="p">(</span><span class="n">rst_n</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">clk_i</span>          <span class="p">(</span><span class="n">clk</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">en1_i</span>          <span class="p">(</span><span class="n">dm_en</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">wen1_i</span>         <span class="p">(</span><span class="n">dm_wen</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">addr1_i</span>        <span class="p">(</span><span class="n">dm_addr</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data1_in_i</span>     <span class="p">(</span><span class="n">dm_din</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data1_out_o</span>    <span class="p">(</span><span class="n">dm_dout</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data1_busy_o</span>   <span class="p">(</span><span class="n">dm_busy</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">en2_i</span>          <span class="p">(</span><span class="mb">1'b1</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">wen2_i</span>         <span class="p">(</span><span class="mb">1'b0</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">addr2_i</span>        <span class="p">(</span><span class="n">im_addr</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data2_in_i</span>     <span class="p">(</span><span class="mh">32'h0000</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data2_out_o</span>    <span class="p">(</span><span class="n">im_dout</span><span class="p">),</span>
+    <span class="p">.</span><span class="n">data2_busy_o</span>   <span class="p">(</span><span class="n">im_busy</span><span class="p">)</span>
+  <span class="p">);</span>
 
-  assign tohost_int_o = (dm_wen &amp;&amp; dm_addr == 32'h80001000);
-  assign tohost_data_o = tohost_int_o == 1'b1 ? dm_din : '0;
+  <span class="k">assign</span> <span class="n">tohost_int_o</span> <span class="o">=</span> <span class="p">(</span><span class="n">dm_wen</span> <span class="o">&amp;&amp;</span> <span class="n">dm_addr</span> <span class="o">==</span> <span class="mh">32'h80001000</span><span class="p">);</span>
+  <span class="k">assign</span> <span class="n">tohost_data_o</span> <span class="o">=</span> <span class="n">tohost_int_o</span> <span class="o">==</span> <span class="mb">1'b1</span> <span class="o">?</span> <span class="n">dm_din</span> <span class="o">:</span> <span class="mb">'0</span><span class="p">;</span>
 
-endmodule</code></pre></figure>
+<span class="k">endmodule</span></code></pre></figure>
 
 <h2 id="running-the-simulation-and-viewing-signals">Running the Simulation and Viewing Signals</h2>
 <p>To run the simulation, we will need a top level c++ program that instantiates the top level SystemVerilog module and provides proper inputs and checks the expected outputs. We could have skipped a step and just instantiated the memory and the core in this program. But this way we get to keep the <code class="highlighter-rouge">top.sv</code> unchanged and use it as the top level for any other non-verilator simulator what we may use later. I have created a cpp file by making slight modification to the sim_main.cpp file given as an example. We will save the modified cpp file in <code class="highlighter-rouge">vsim/sim_main.cpp</code>. There is a lot going on in this file. The changes that we are going to make in this file includes adding the ability to run the program with an extra argument to set the logfile name. This will help us run multiple RISCV programs as regression tests. The other major change is inside the main function itself:</p>
