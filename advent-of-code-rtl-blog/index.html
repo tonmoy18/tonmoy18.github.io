@@ -6,13 +6,6 @@
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.3/dist/katex.min.css">
       
       
-      
-      
-      
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.9.1/skins/default.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/wavedrom/2.9.1/wavedrom.min.js"></script>
-      
-      
-      
       <style>
       /**
  * prism.js Github theme based on GitHub's theme.
@@ -279,17 +272,8 @@ pre[data-line] .line-highlight[data-end]:after {
 <p>Within the testbench module, the synthesizable and lint-clean solution module is instantiated. The testbench starts providing the input sequence only when the &quot;input_ready&quot; output port of the design is high. The input to this design module involves presenting each character&apos;s ASCII code as an 8-bit input via a port named &quot;char_in&quot; on every clock cycle while also asserting an &quot;input_valid&quot; signal high, signifying the validity of a character input during that clock cycle.</p>
 <p>Notably, to indicate the end of a line, the testbench strategically utilizes the ASCII code for a newline character (&apos;\n&apos;), which is 10. Once the end of input file detected, a final 10 may be provided, and subsequently, the &quot;input_valid&quot; signal is lowered. This  approach reduces complexity on testbench design based on the typical inputs of the advent of code.</p>
 <p>After dispatching the input sequences, the testbench monitors the &quot;output_valid&quot; pulse from the design module. Upon receipt of this signal, it promptly captures the result and prints it to the terminal. Given that many problems culminate in a numerical result, the design module outputs a 64-bit number, relayed through a 64 bit port named &quot;result.&quot;</p>
-<div class="wavedrom"><script type="WaveDrom">  {
-  "signal": [
-    {"name": "clock",       "wave": "P....................."},
-    {"name": "input_valid", "wave": "0.......1........0...."},
-    {"name": "input_ready", "wave": "0..........1.........."},
-    {"name": "char_in[7:0]","wave": "x.......2...22222x...."},
-    {"name": "output_valid","wave": "0...................10"},
-    {"name": "result[63:0]","wave": "x...................8x"}
-  ]
-}
-</script></div><h2 class="mume-header" id="stay-tuned">Stay Tuned!</h2>
+<img src='wave.svg'/>
+<h2 class="mume-header" id="stay-tuned">Stay Tuned!</h2>
 
 <p>In the upcoming posts, I&apos;ll delve into the details of each Advent of Code puzzle, showcasing the Verilog implementation, discussing hardware design considerations, and unraveling the unique challenges posed by this approach. Join me on this festive journey as we blend software adventuring with the world of digital hardware design!</p>
 <h2 class="mume-header" id="solutions-so-far">Solutions So far</h2>
