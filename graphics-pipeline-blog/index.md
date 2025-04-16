@@ -179,7 +179,10 @@ Triangle 2: (0.0 , 68.0), (136.0, 100.0), (17.0, 100.0)
 
 I ended up coding a simple loop in Vitis to increment one of the 3 vertices for each triangle every 50ms to get this effect.
 
-![Monitor Video](./assets/monitor_video.mov)
+<video width="1920" height="1080" controls="">
+  <source src="./assets/monitor_video.mov">
+Your browser does not support the video tag.
+</video>
 
 It looks a little blurry because the this is a 640x480 image on a 4k monitor.
 
