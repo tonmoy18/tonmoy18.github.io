@@ -65,6 +65,8 @@ For this project, the processor subsystem needed to be configued to have one Hig
 ## Frame Generator
 Implemented in RTL, this block:
 
+- First, if configured, clears the frame
+
 - Reads each triangle data from a small on-chip BRAM buffer,
 
 - Breaks it into individual vertex groups (A, B, C),
@@ -175,6 +177,9 @@ These are the vertex coordinates for the two traingles rendered:
 Triangle 1: (64.0, 64.0), (128.0,  96.0), ( 0.0, 64.0)
 Triangle 2: (0.0 , 68.0), (136.0, 100.0), (17.0, 100.0)
 
+I ended up coding a simple loop in Vitis to increment one of the 3 vertices for each triangle every 50ms to get this effect.
+
+![Monitor Video](./assets/monitor_video.mov)
 
 It looks a little blurry because the this is a 640x480 image on a 4k monitor.
 
